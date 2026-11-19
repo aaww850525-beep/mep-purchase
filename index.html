@@ -151,9 +151,14 @@ details summary{cursor:pointer}
 <div id="loginView">
   <div id="login">
     <div class="brand"><img class="logo" alt="" id="logoL"><div><h1>機電工程採購</h1><div class="sub">合約數量・下單累計・超量警示</div></div></div>
-    <label>請選擇專案（點選即進入）</label>
+    <label>選擇專案</label>
     <div class="projs" id="projPick"></div>
+    <label for="lu">使用人</label>
+    <input type="text" id="lu" autocomplete="username" placeholder="帳號">
+    <label for="lp">密碼</label>
+    <input type="password" id="lp" autocomplete="current-password" placeholder="使用人專用密碼">
     <div id="loginErr"></div>
+    <button class="btn p" id="loginBtn" style="width:100%;padding:8px">登入</button>
     <div class="stat" id="modeInfo" style="margin-top:12px"></div>
   </div>
 </div>
@@ -161,7 +166,7 @@ details summary{cursor:pointer}
 <div id="appView" hidden>
 <header>
   <div class="brand"><img class="logo" alt="" id="logoA"><div><h1>機電工程採購</h1><div class="sub" id="projSub"></div></div>
-    <div class="who"><button class="btn sm" id="logoutBtn">切換專案</button></div></div>
+    <div class="who"><div id="whoName"></div><button class="btn sm" id="logoutBtn">登出／切換專案</button></div></div>
   <div class="ctl"><input type="text" id="q" placeholder="搜尋：品名、規格、廠商、合約編號…"></div>
 </header>
 <nav id="tabs">
@@ -194,7 +199,7 @@ details summary{cursor:pointer}
     <div class="tw"><table><thead><tr><th>廠商</th><th>品名／規格</th><th>單位</th><th class="n">合約數量</th><th class="n">已叫累計</th><th class="n">申請數量</th><th class="n">下單後累計</th><th>備註</th><th></th></tr></thead><tbody id="cartBody"></tbody></table></div>
     <h3>進料申請單資料</h3>
     <div class="form2">
-      <label>申請人（必填）<input type="text" id="orderBy" placeholder="請輸入姓名"></label>
+      <label>申請人（登入者）<input type="text" id="orderBy" readonly></label>
       <label>聯繫電話 <input type="text" id="phone" placeholder="例：0912345678"></label>
       <label>需用日期 <input type="date" id="needDate"></label>
       <label>用途說明 <input type="text" id="place" placeholder="例：A棟2-3F B棟4F管道間排水"></label>
@@ -215,11 +220,8 @@ details summary{cursor:pointer}
 <section id="s-cons">
   <div class="chips" id="grpChips"></div>
   <div class="grid" id="kpis"></div>
-  <div class="note" id="pdfNote" hidden>線上版不含合約 PDF 掃描檔；請在公司電腦開啟本機版（機電營運處資料夾內的 index.html）點合約編號查看。</div>
-  <div class="stat">所有已用印合約。金額為合約總價（含稅）；「已叫金額」以合約單價×累計數量估算（未稅）。點 📄 合約編號開啟用印合約 PDF（工+料合約另有「總價／材料／工程」等分冊連結）；「看叫料明細」可直接篩選該合約的叫料品項。</div>
-  <div class="tw"><table><thead><tr><th>合約編號</th><th>工程分類</th><th>廠商</th><th>合約名稱</th><th>類別</th><th class="n">合約總價(含稅)</th><th class="n">細項數</th><th class="n">已叫金額(未稅)</th><th>叫料進度</th><th>用印日期</th></tr></thead><tbody id="consBody"></tbody></table></div>
-  <h3>資料夾內查無用印合約掃描檔（不列入叫料）</h3>
-  <div class="stat" id="unsigned"></div>
+  <div class="stat">各合約的已叫金額累計＝合約單價 × 已叫數量（含稅 5%）。叫料進度以該合約可叫料明細的總金額為基準。勞務工程不開放叫料。</div>
+  <div class="tw"><table><thead><tr><th>合約編號</th><th>工程分類</th><th>廠商</th><th>合約名稱</th><th class="n">合約總價(含稅)</th><th class="n">已叫金額累計(含稅)</th><th>叫料進度</th></tr></thead><tbody id="consBody"></tbody></table></div>
 </section>
 
 <section id="s-alert">
@@ -253,10 +255,9 @@ details summary{cursor:pointer}
 <script src="config.js"></script>
 <script>/*CFG-DEFAULT-START*/
 /* 機電工程採購 設定檔
- * apiUrl     ：部署 Google Apps Script 後貼上網址（…/exec），所有人的叫料紀錄就會共用。留空 = 單機模式（紀錄只在各自裝置）。
+ * apiUrl     ：Google Apps Script 後端網址（…/exec）。帳號（使用者工作表）與叫料紀錄都在這個後端的 Google 試算表。
  * warnRatio  ：累計叫料達合約數量的幾成時顯示「接近上限」（0.8 = 80%）。
  * notify     ：「超量警示」頁「Email 通知採購」的收件人。'*' = 該專案所有廠商；也可用廠商名稱個別指定。
- * supervisors：叫料超出合約數量（不可下單）時，「Email 通知主管」的收件人。
  * companyName：進料申請單抬頭。
  * deliver    ：進料申請單「交貨地點」預設值（各專案）；使用者改過後會記在自己的裝置。
  */
@@ -271,10 +272,6 @@ if (!window.APP_CONFIG) window.APP_CONFIG = {
   notify: {
     tp: { '*': [] },
     yf: { '*': [] }
-  },
-  supervisors: {
-    tp: [],
-    yf: []
   }
 };
 /*CFG-DEFAULT-END*/</script>
@@ -324,8 +321,10 @@ async function sha256(s) {
 /* ---------- backend (Apps Script) or local ---------- */
 const apiUrl = () => (store.get('jlx_api', '') || CFG.apiUrl || '').trim();
 async function api(action, payload) {
-  const r = await fetch(apiUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action }, payload || {})) });
-  const j = await r.json(); if (!j.ok) throw new Error(j.error || '伺服器錯誤'); return j;
+  const r = await fetch(apiUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action, token: S.token || '', project: S.proj }, payload || {})) });
+  const j = await r.json();
+  if (!j.ok) { if (/重新登入|已停用|權限/.test(j.error || '') && action !== 'login') { store.set('jlx_sess', null); } throw new Error(j.error || '伺服器錯誤'); }
+  return j;
 }
 
 /* ---------- state ---------- */
@@ -335,23 +334,40 @@ let pickProj = projKeys[0];
 function renderProjPick() {
   $('#projPick').innerHTML = projKeys.map(k => `<button class="proj ${k === pickProj ? 'on' : ''}" data-p="${k}"><b>${esc(DATA[k].name)}</b><span>${DATA[k].contracts.length} 份合約・${(() => { const lab = new Set(DATA[k].contracts.filter(c => c.grp === '勞務工程').map(c => c.cno)); return DATA[k].items.filter(i => !lab.has(i.cno)).length; })()} 項可叫料</span></button>`).join('');
 }
-$('#projPick').addEventListener('click', e => { const b = e.target.closest('.proj'); if (!b) return; startSession(b.dataset.p); });
+$('#projPick').addEventListener('click', e => { const b = e.target.closest('.proj'); if (!b) return; pickProj = b.dataset.p; renderProjPick(); });
 renderProjPick();
-if (!projKeys.length) { $('#loginErr').textContent = '合約資料未載入，請確認 index.html 是完整版本（內含合約資料）。'; }
-$('#modeInfo').textContent = apiUrl() ? '共用模式：叫料紀錄存在 Google 試算表，所有人共用同一份累計數量。' : '單機模式：尚未設定 Google 試算表，叫料紀錄只存在這台裝置的瀏覽器。';
+if (!projKeys.length) { $('#loginErr').textContent = '合約資料未載入，請確認 index.html 是完整版本（內含合約資料）。'; $('#loginBtn').disabled = true; }
+$('#modeInfo').textContent = apiUrl() ? '帳號由 Google 試算表「使用者」工作表管理；叫料紀錄所有人共用。' : '尚未設定 Google 試算表後端（config.js 的 apiUrl），無法登入。';
 
-// 叫料人姓名（記在這台裝置，下次自動帶入）
+// 登入：選專案＋使用人＋密碼，由 Google 後端驗證
+async function doLogin() {
+  const u = $('#lu').value.trim(), p = $('#lp').value; $('#loginErr').textContent = '';
+  if (!u || !p) { $('#loginErr').textContent = '請輸入使用人與密碼'; return; }
+  if (!apiUrl()) { $('#loginErr').textContent = '尚未設定後端網址，無法登入'; return; }
+  $('#loginBtn').disabled = true; $('#loginBtn').textContent = '登入中…';
+  try {
+    S.proj = pickProj; S.token = '';
+    const j = await api('login', { user: u, password: p, project: pickProj });
+    $('#lp').value = '';
+    startSession(pickProj, j.user, j.token);
+  } catch (e) { $('#loginErr').textContent = e.message; }
+  $('#loginBtn').disabled = false; $('#loginBtn').textContent = '登入';
+}
+$('#loginBtn').onclick = doLogin;
+$('#lp').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('#lu').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lp').focus(); });
+
 const orderByName = () => ($('#orderBy').value || '').trim();
-$('#orderBy').addEventListener('input', () => store.set('jlx_name', orderByName()));
-$('#phone').addEventListener('input', () => store.set('jlx_phone', $('#phone').value.trim()));
+$('#phone').addEventListener('input', () => store.set('jlx_phone_' + (S.user ? S.user.id : ''), $('#phone').value.trim()));
 $('#deliver').addEventListener('input', () => store.set('jlx_deliver_' + S.proj, $('#deliver').value.trim()));
 const defaultDeliver = p => ((CFG.deliver || {})[p]) || '';
 
-function startSession(proj) {
-  S.proj = proj;
-  store.set('jlx_proj', proj);
-  $('#orderBy').value = store.get('jlx_name', '');
-  $('#phone').value = store.get('jlx_phone', '');
+function startSession(proj, user, token) {
+  S.proj = proj; S.user = user; S.token = token;
+  store.set('jlx_sess', { proj, user, token });
+  $('#whoName').textContent = user.name;
+  $('#orderBy').value = user.name;
+  $('#phone').value = store.get('jlx_phone_' + user.id, '') || user.phone || '';
   $('#deliver').value = store.get('jlx_deliver_' + proj, '') || defaultDeliver(proj);
   const P = DATA[proj];
   S.cons = P.contracts; S.conBy = {}; P.contracts.forEach(c => S.conBy[c.cno] = c);
@@ -365,7 +381,7 @@ function startSession(proj) {
   $('#apiUrlIn').value = store.get('jlx_api', '') || CFG.apiUrl || '';
   initFilters(); refreshOrders();
 }
-function logout() { store.set('jlx_proj', null); location.reload(); }
+function logout() { store.set('jlx_sess', null); location.reload(); }
 $('#logoutBtn').onclick = logout;
 const cartKey = () => 'jlx_cart_' + S.proj;
 
@@ -377,6 +393,7 @@ async function refreshOrders() {
     else S.orders = store.get(localKey(), []);
     $('#apiErr').hidden = true;
   } catch (e) {
+    if (/重新登入|已停用|權限/.test(e.message)) { alert(e.message); logout(); return; }
     S.orders = [];
     $('#apiErr').innerHTML = `⚠ 無法讀取共用叫料紀錄（${esc(e.message)}），目前顯示的已叫累計可能不正確，請稍後按 <button class="btn sm" onclick="refreshOrders()">重新讀取</button>`;
     $('#apiErr').hidden = false;
@@ -499,25 +516,15 @@ $('#cartBody').addEventListener('click', e => {
 $('#cartMsg').addEventListener('click', e => { if (e.target.id === 'showOver') overAlert(overLines()); });
 $('#clearCart').onclick = async () => { if (await confirmDlg('<p>確定清空叫料單？</p>')) { S.cart = []; renderCart(); renderPick(); } };
 function buyersFor(vendor) { const n = (CFG.notify || {})[S.proj] || {}; return [...new Set([].concat(n['*'] || [], n[vendor] || []))]; }
-function supervisors() { return [...new Set(((CFG.supervisors || {})[S.proj]) || [])]; }
 
-function overMailto(list) {
-  const P = DATA[S.proj].name;
-  const subj = `【超出合約數量】${P} 叫料需辦理請購（${orderByName() || "申請人"}）`;
-  const body = `主管您好：\n\n${P} 以下品項叫料數量超出合約數量，系統已禁止下單，將另行填寫請購單辦理：\n\n` +
-    list.map(x => { const it = x.it, st = status(it, x.q); return `・${it.vendor}｜${it.cno}｜${it.name}${it.spec ? ' ' + it.spec : ''}\n　合約 ${fmt(it.qty)} ${it.unit}，已叫 ${fmt(used(it.id))}，剩餘 ${fmt(remainOf(it))}，本次需求 ${fmt(x.q)}（超出 ${fmt(st.tot - it.qty)}）`; }).join('\n') +
-    `\n\n需用日期：${$('#needDate').value || '-'}　用途說明：${$('#place').value || '-'}\n申請人：${orderByName() || "-"}　電話：${$('#phone').value || '-'}`;
-  return 'mailto:' + supervisors().map(encodeURIComponent).join(',') + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
-}
 function overAlert(list) {
   if (!list.length) return;
   const anyRem = list.some(x => remainOf(x.it) > 0);
-  const sup = supervisors();
   const html = `<h3 style="margin-top:0;color:var(--bad)">⚠ 超出合約數量，不可下單</h3>
 <div class="tw"><table><thead><tr><th>品名</th><th class="n">合約</th><th class="n">剩餘</th><th class="n">本次</th><th class="n">超出</th></tr></thead><tbody>` +
     list.map(x => { const it = x.it, st = status(it, x.q); return `<tr class="over"><td class="nm">${esc(it.vendor)}｜${esc(it.name)}${it.spec ? ` <span class="tag">${esc(it.spec)}</span>` : ''}<div class="d">${esc(it.cno)}</div></td><td class="n">${fmt(it.qty)}</td><td class="n">${fmt(remainOf(it))}</td><td class="n">${fmt(x.q)}</td><td class="n" style="color:var(--bad)">${fmt(st.tot - it.qty)} ${esc(it.unit)}</td></tr>`; }).join('') + `</tbody></table></div>
-<div class="note bad" style="margin-top:10px"><b>請下單人員：</b><br>1. 超出合約的數量<b>自行填寫請購單</b>辦理。<br>2. <b>通知主管</b>（可按下方按鈕寄信）。<br>3. 叫料單內請把數量改在剩餘數量內，或移除該項後再送出。</div>
-<div class="row" style="margin-top:8px"><a class="btn" href="${overMailto(list)}">✉ Email 通知主管</a>${sup.length ? `<span class="d">收件人：${esc(sup.join('、'))}</span>` : '<span class="d">（尚未設定主管 Email，請在 config.js 的 supervisors 填入；或寄信時自行輸入收件人）</span>'}</div>`;
+<div class="note bad" style="margin-top:10px"><b>請下單人員：</b><br>1. 超出合約的數量<b>自行填寫請購單</b>辦理。<br>2. <b>通知主管</b>。<br>3. 叫料單內請把數量改在剩餘數量內，或移除該項後再送出。</div>
+`;
   return new Promise(res => {
     const d = $('#dlg'); $('#dlgBody').innerHTML = html;
     $('#dlgYes').textContent = anyRem ? '改為剩餘數量' : '移除超量項目'; $('#dlgNo').textContent = '關閉';
@@ -638,7 +645,6 @@ $('#exportCsv').onclick = () => {
 // 合約 PDF 只存在本機專案資料夾：本機開啟（file:// 或 localhost）才顯示連結，線上版（GitHub Pages）隱藏
 const PDF_OK = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!CFG.pdfOnline;
 function renderCons() {
-  $('#pdfNote').hidden = PDF_OK;
   let tot = 0, itemsAmt = 0, usedAmt = 0;
   const isLab = c => c.grp === '勞務工程';
   const cnt = g => S.cons.filter(c => g === 'all' || (g === '勞務工程') === isLab(c));
@@ -651,18 +657,13 @@ function renderCons() {
     const ca = its.reduce((s, i) => s + (i.amt || 0), 0);
     tot += c.total || 0; itemsAmt += ca; usedAmt += ua;
     const r = ca ? ua / ca : 0, k = r > 1 ? 'bad' : r >= WARN ? 'warn' : 'ok';
-    const pdfs = PDF_OK ? (c.pdfs || []) : [];
-    const cnoCell = pdfs.length ? `<a href="${esc(encodeURI(pdfs[0].path))}" target="_blank" rel="noopener" title="開啟用印合約 PDF：${esc(pdfs[0].label)}">📄 ${esc(c.cno)}</a>` : esc(c.cno);
-    const more = pdfs.length > 1 ? `<div class="pdfs">${pdfs.map(p => `<a href="${esc(encodeURI(p.path))}" target="_blank" rel="noopener">${esc(p.label)}</a>`).join('')}</div>` : '';
     const lab = isLab(c), canPick = !lab && c.nItems;
-    return `<tr${lab ? ' class="lab"' : ''}><td class="nw">${cnoCell}${more}${canPick ? `<div><a href="#" class="d" data-con="${esc(c.cno)}">看叫料明細 ›</a></div>` : ''}</td><td class="nw"><span class="tag ${lab ? 'labt' : 'eqt'}">${lab ? '勞務工程' : '設備工程'}</span></td><td class="nw">${esc(c.vendor)}</td><td class="nm">${esc(c.title)}${c.note ? `<div class="d">${esc(c.note)}</div>` : ''}</td><td class="nw"><span class="tag">${esc(c.kind)}</span></td><td class="n">${fmt(c.total, 0)}</td><td class="n">${c.nItems || '—'}</td><td class="n">${canPick ? fmt(ua, 0) : '—'}</td><td class="nw">${canPick ? bar({ r, k }) : `<span class="d">${lab ? '勞務工程・不開放叫料' : '不需叫料'}</span>`}</td><td class="nw d">${esc(c.date || '')}</td></tr>`;
+    return `<tr${lab ? ' class="lab"' : ''}><td class="nw">${esc(c.cno)}${canPick ? `<div><a href="#" class="d" data-con="${esc(c.cno)}">看叫料明細 ›</a></div>` : ''}</td><td class="nw"><span class="tag ${lab ? 'labt' : 'eqt'}">${lab ? '勞務工程' : '設備工程'}</span></td><td class="nw">${esc(c.vendor)}</td><td class="nm">${esc(c.title)}</td><td class="n">${fmt(c.total, 0)}</td><td class="n"><b>${canPick ? fmt(Math.round(ua * 1.05), 0) : '—'}</b></td><td class="nw">${canPick ? bar({ r, k }) : `<span class="d">${lab ? '勞務工程・不開放叫料' : '不需叫料'}</span>`}</td></tr>`;
   });
-  $('#consBody').innerHTML = rows.join('') || '<tr><td colspan="10" class="muted">沒有合約</td></tr>';
+  $('#consBody').innerHTML = rows.join('') || '<tr><td colspan="7" class="muted">沒有合約</td></tr>';
   const nOver = S.items.filter(i => status(i).k === 'bad').length, nWarn = S.items.filter(i => status(i).k === 'warn').length;
-  $('#kpis').innerHTML = [['合約（' + (S.grp === 'all' ? '全部' : S.grp) + '）', shown.length + ' 份'], ['合約總價(含稅)', 'NT$ ' + fmt(tot, 0)], ['可叫料明細（設備工程）', S.items.length + ' 項'], ['已叫金額(未稅)', 'NT$ ' + fmt(usedAmt, 0)], ['接近上限', nWarn + ' 項'], ['已超量', nOver + ' 項']]
+  $('#kpis').innerHTML = [['合約（' + (S.grp === 'all' ? '全部' : S.grp) + '）', shown.length + ' 份'], ['合約總價(含稅)', 'NT$ ' + fmt(tot, 0)], ['可叫料明細（設備工程）', S.items.length + ' 項'], ['已叫金額累計(含稅)', 'NT$ ' + fmt(Math.round(usedAmt * 1.05), 0)], ['接近上限', nWarn + ' 項'], ['已超量', nOver + ' 項']]
     .map(([a, b]) => `<div class="kpi"><span>${a}</span><b>${b}</b></div>`).join('');
-  const un = DATA[S.proj].unsigned || [];
-  $('#unsigned').innerHTML = un.length ? un.map(u => '・' + esc(u)).join('<br>') : '無';
 }
 $('#grpChips').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (!b) return; S.grp = b.dataset.g; renderCons(); });
 $('#consBody').addEventListener('click', e => { const a = e.target.closest('[data-con]'); if (!a) return; e.preventDefault(); S.con = a.dataset.con; S.status = 'all'; $('#q').value = ''; $('#conBox').open = false; initFilters(); setTab('pick'); });
@@ -704,8 +705,8 @@ function confirmDlg(html) {
 }
 
 /* ---------- resume session ---------- */
-const lastProj = store.get('jlx_proj', null);
-if (lastProj && DATA[lastProj]) startSession(lastProj);
+const sess = store.get('jlx_sess', null);
+if (sess && sess.token && DATA[sess.proj]) { pickProj = sess.proj; renderProjPick(); startSession(sess.proj, sess.user, sess.token); }
 </script>
 </body>
 </html>

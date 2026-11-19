@@ -486,17 +486,17 @@ function renderCart() {
     const it = S.byId[l.id]; const q = Number(l.qty) || 0; const st = status(it, q); const rem = remainOf(it);
     return `<tr class="${st.k === 'bad' ? 'over' : st.k === 'warn' ? 'warn' : ''}"><td class="nw">${esc(it.vendor)}</td><td class="nm">${esc(it.name)}${it.spec ? ` <span class="tag">${esc(it.spec)}</span>` : ''}<div class="d">${esc(it.cno)} ${esc(it.no)}</div></td><td>${esc(it.unit)}</td>
 <td class="n">${fmt(it.qty)}</td><td class="n">${fmt(used(it.id))}<div class="d">剩 ${fmt(rem)}</div></td><td class="n"><div class="stepper"><button type="button" data-dec="${i}" aria-label="減少">－</button><input type="number" min="0" step="any" inputmode="decimal" data-q="${i}" value="${esc(l.qty)}"><button type="button" data-inc="${i}" aria-label="增加">＋</button></div></td>
-<td class="n">${fmt(st.tot)} ${st.k === 'bad' ? '<span class="tag bad">不可下單</span>' : label(st.k)}${st.k === 'bad' ? `<div class="d" style="color:var(--bad)">超出 ${fmt(st.tot - it.qty)} ${esc(it.unit)}</div>` + (rem > 0 ? `<button class="btn sm" data-fit="${i}" style="margin-top:4px">改為剩餘 ${fmt(rem)}</button>` : '') : ''}</td><td><input type="text" class="memo" data-m="${i}" value="${esc(l.memo != null ? l.memo : (it.spec || ''))}" placeholder="型號等"></td><td><button class="btn sm del" data-x="${i}">移除</button></td></tr>`;
+<td class="n" data-st="${i}">${stCell(it, st, rem, i)}</td><td><input type="text" class="memo" data-m="${i}" value="${esc(l.memo != null ? l.memo : (it.spec || ''))}" placeholder="型號等"></td><td><button class="btn sm del" data-x="${i}">移除</button></td></tr>`;
   }).join('');
   const vend = [...new Set(S.cart.map(l => S.byId[l.id].vendor))];
-  $('#splitInfo').textContent = vend.length > 1 ? `本次共 ${vend.length} 家廠商（${vend.join('、')}），送出後會依廠商分成 ${vend.length} 張進料申請單。` : '';
+  $('#splitInfo').textContent = vend.length > 1 ? `本次共 ${vend.length} 家廠商（${vend.join('、')}），送出後會依廠商分成 ${vend.length} 張進料申請單。` : ''; renderCartMsg(); } function stCell(it, st, rem, i) { return `${fmt(st.tot)} ${st.k === 'bad' ? '<span class="tag bad">不可下單</span>' : label(st.k)}${st.k === 'bad' ? `<div class="d" style="color:var(--bad)">超出 ${fmt(st.tot - it.qty)} ${esc(it.unit)}</div>` + (rem > 0 ? `<button class="btn sm" data-fit="${i}" style="margin-top:4px">改為剩餘 ${fmt(rem)}</button>` : '') : ''}`; } function updateCartRow(i) { const l = S.cart[i], it = S.byId[l.id], st = status(it, Number(l.qty) || 0), rem = remainOf(it); const td = document.querySelector(`[data-st="${i}"]`); if (td) td.innerHTML = stCell(it, st, rem, i); const tr = td && td.closest('tr'); if (tr) tr.className = st.k === 'bad' ? 'over' : st.k === 'warn' ? 'warn' : ''; saveCart(); renderCartMsg(); } function renderCartMsg() {
   const over = overLines();
   $('#cartMsg').innerHTML = over.length ? `<div class="note bad"><b>有 ${over.length} 項超出合約數量，不可下單。</b>請把數量改在剩餘數量內或移除該項；超出的部分請自行填寫請購單，並通知主管。 <button class="btn sm" id="showOver">查看處理方式</button></div>` : '';
 }
 $('#cartBody').addEventListener('input', e => {
   const qi = e.target.dataset.q, mi = e.target.dataset.m;
   if (mi != null) { S.cart[mi].memo = e.target.value; saveCart(); return; }
-  if (qi != null) { S.cart[qi].qty = e.target.value; const pos = e.target.selectionStart; renderCart(); const el = document.querySelector(`[data-q="${qi}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (x) {} } }
+  if (qi != null) { S.cart[qi].qty = e.target.value; updateCartRow(Number(qi)); }
 });
 // 數量輸入完成（離開欄位／按 Enter）時若超量，立即跳出警示
 $('#cartBody').addEventListener('change', e => { const qi = e.target.dataset.q; if (qi == null) return; const x = overLines().find(o => String(o.i) === String(qi)); if (x) overAlert([x]); });

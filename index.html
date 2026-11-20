@@ -6,9 +6,8 @@
 <title>機電工程採購</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f6feb'/%3E%3Cpath d='M14 22h36l-4 26H18z' fill='%23fff'/%3E%3Cpath d='M24 22c0-6 4-10 8-10s8 4 8 10' stroke='%23fff' stroke-width='4' fill='none'/%3E%3Cpath d='M25 35l5 5 10-11' stroke='%231f6feb' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2330;--sub:#5f6b7a;--line:#dfe3e8;--acc:#1f6feb;--accs:#e8f0fe;--best:#e6f6ea;--bestink:#17703a;--warn:#b54708;--warnbg:#fff4e5;--bad:#b42318;--badbg:#fdecea}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1d2128;--ink:#e6e9ee;--sub:#9aa4b2;--line:#323844;--acc:#5b9bff;--accs:#1f2c44;--best:#173823;--bestink:#7ee2a0;--warn:#ffb46b;--warnbg:#3a2a16;--bad:#ff8a80;--badbg:#3d1d1b}}
-:root[data-theme="dark"]{--bg:#14171c;--card:#1d2128;--ink:#e6e9ee;--sub:#9aa4b2;--line:#323844;--acc:#5b9bff;--accs:#1f2c44;--best:#173823;--bestink:#7ee2a0;--warn:#ffb46b;--warnbg:#3a2a16;--bad:#ff8a80;--badbg:#3d1d1b}
+:root{color-scheme:dark;--bg:#050b18;--card:#0b1629;--ink:#e6f1ff;--sub:#8ba3c7;--line:#1c2f4d;--acc:#22d3ee;--acc2:#3b82f6;--accs:#0e2a42;--best:#0c2b25;--bestink:#34d399;--warn:#fbbf24;--warnbg:#2b2210;--bad:#f87171;--badbg:#341418;--glow:rgba(34,211,238,.35)}
+/* 全站固定深色科技風（不隨系統深淺色切換）；列印的進料申請單另外固定黑字白底 */
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif}
@@ -73,10 +72,9 @@ h3{margin:16px 0 6px;font-size:16px}
 .kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
 .kpi b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
 .kpi span{font-size:12px;color:var(--sub)}
-.tag.labt{background:#fff3b0;border-color:#c9a400;color:#6b5600}
+.tag.labt{background:#3a3210;border-color:#c9a400;color:#ffe680}
 .tag.eqt{background:var(--accs);border-color:var(--acc);color:var(--acc)}
-tr.lab td{background:#fffbe0}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) tr.lab td{background:#2e2a14}:root:not([data-theme="light"]) .tag.labt{background:#4a4210;color:#ffe680}}
+tr.lab td{background:rgba(250,204,21,.07)}
 /* 進料申請單 列印預覽（同頁覆蓋） */
 #printView{position:fixed;inset:0;z-index:50;overflow:auto;background:#e5e7eb;color:#000}
 #printView .pbar{position:sticky;top:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#f9fafb;border-bottom:1px solid #ccc;padding:8px 12px;font-size:14px;color:#333}
@@ -242,6 +240,96 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .right{margin-left:auto}
 details summary{cursor:pointer}
 @media (max-width:600px){header{position:static}th,td{padding:5px 6px}.brand .who{display:none}#q{min-width:0;width:100%}}
+/* ===== 登入後：深色科技風（與登入頁一致） ===== */
+body{background:radial-gradient(1000px 700px at 0% 0%,rgba(59,130,246,.16),transparent 60%),radial-gradient(900px 700px at 100% 100%,rgba(139,92,246,.13),transparent 60%),var(--bg);background-attachment:fixed}
+#appView{position:relative}
+#appView::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(56,189,248,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.05) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse at 50% 0%,#000 20%,transparent 75%)}
+#appView>*{position:relative;z-index:1}
+#appView header{position:sticky;z-index:5;background:rgba(5,12,26,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(34,211,238,.25),0 8px 24px rgba(0,0,0,.35)}
+#appView header h1{background:linear-gradient(90deg,#fff,#a5f3fc 60%,#93c5fd);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.1em}
+#appView .logo{box-shadow:0 0 0 1px rgba(56,189,248,.45),0 0 22px rgba(34,211,238,.3)}
+#appView .brand .sub{font-size:12px;letter-spacing:.06em}
+#appView .brand .sub::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 8px #34d399;margin-right:6px;vertical-align:1px;animation:lgBlink 1.6s ease-in-out infinite}
+#whoName{color:var(--ink);font-weight:600}
+#q{background:rgba(2,8,23,.7);border-color:#24406a}
+input[type=text],input[type=number],input[type=password],input[type=date],input[type=email],select,textarea{background:rgba(2,8,23,.6);border-color:#24406a;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+input::placeholder,textarea::placeholder{color:#5f7395}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,211,238,.16)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(1) hue-rotate(150deg)}
+input[type=checkbox]{accent-color:#22d3ee}
+/* 分頁標籤 */
+nav{padding:12px 16px 0;gap:6px}
+nav button{border:1px solid var(--line);border-bottom:none;background:rgba(11,22,41,.6);color:var(--sub);border-radius:10px 10px 0 0;padding:7px 16px;letter-spacing:.05em;transition:color .15s,background .15s}
+nav button:hover{color:var(--ink);background:rgba(34,211,238,.06)}
+nav button.on{position:relative;color:#fff;background:var(--card);border-color:rgba(34,211,238,.45)}
+nav button.on::before{content:'';position:absolute;left:10px;right:10px;top:-1px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));box-shadow:0 0 10px var(--acc)}
+nav .cnt{background:var(--acc);color:#04111f;font-weight:700;box-shadow:0 0 8px var(--glow)}
+nav .cnt.bad{background:var(--bad);color:#1a0505}
+/* 內容區塊 */
+section{background:rgba(11,22,41,.86);border-color:rgba(34,211,238,.28);border-radius:0 12px 12px 12px;box-shadow:0 20px 50px rgba(0,0,0,.35),0 0 40px rgba(34,211,238,.05)}
+.tw{border-color:var(--line);border-radius:10px;background:rgba(3,10,24,.35)}
+th{background:#0d2140;color:#a5f3fc;font-weight:600;letter-spacing:.06em;border-bottom:1px solid rgba(34,211,238,.35)}
+td{border-bottom-color:rgba(28,47,77,.8)}
+.tw tbody tr:hover td{background:rgba(34,211,238,.045)}
+tr.grp td{background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(59,130,246,.07) 60%,transparent);border-top:1px solid rgba(34,211,238,.55);color:#e6f1ff}
+.tw tbody tr.grp:hover td{background:linear-gradient(90deg,rgba(34,211,238,.24),rgba(59,130,246,.1) 60%,transparent)}
+tr.sec td{background:rgba(255,255,255,.025);color:#93c5fd}
+tr.warn td{background:rgba(251,191,36,.07)}
+tr.over td{background:rgba(248,113,113,.09)}
+/* 按鈕與標籤 */
+.btn{border-color:rgba(34,211,238,.6);color:var(--acc);border-radius:8px;transition:box-shadow .15s,background .15s,filter .15s}
+.btn:hover:not(:disabled){background:rgba(34,211,238,.1);box-shadow:0 0 12px rgba(34,211,238,.25)}
+.btn.p{background:linear-gradient(90deg,#22d3ee,#3b82f6);border-color:transparent;color:#04111f;font-weight:700;box-shadow:0 4px 14px rgba(34,211,238,.25)}
+.btn.p:hover:not(:disabled){filter:brightness(1.1);background:linear-gradient(90deg,#22d3ee,#3b82f6)}
+.btn.del{border-color:rgba(248,113,113,.6);color:var(--bad)}
+.btn.del:hover{background:rgba(248,113,113,.1);box-shadow:0 0 12px rgba(248,113,113,.2)}
+.chip{border-color:#24406a;color:var(--sub);transition:all .15s}
+.chip:hover{color:var(--ink);border-color:var(--acc)}
+.chip.on{background:linear-gradient(90deg,#22d3ee,#3b82f6);border-color:transparent;color:#04111f;font-weight:700;box-shadow:0 0 12px rgba(34,211,238,.3)}
+.tag{border-color:#2b4468}
+.tag.eqt{background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.5);color:var(--acc)}
+.bar{background:#13243f;box-shadow:inset 0 0 0 1px rgba(34,211,238,.12)}
+.bar i{background:linear-gradient(90deg,#22d3ee,#34d399);box-shadow:0 0 8px rgba(34,211,238,.6)}
+.bar i.warn{background:linear-gradient(90deg,#f59e0b,#fbbf24);box-shadow:0 0 8px rgba(251,191,36,.6)}
+.bar i.bad{background:linear-gradient(90deg,#ef4444,#f87171);box-shadow:0 0 8px rgba(248,113,113,.6)}
+.note{border:1px solid rgba(251,191,36,.3)}.note.bad{border-color:rgba(248,113,113,.35)}.note.ok{border-color:rgba(52,211,153,.3)}
+/* 卡片類 */
+.kpi{background:rgba(3,10,24,.45);border-color:var(--line);border-radius:12px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--acc),var(--acc2))}
+.kpi b{font-family:ui-monospace,Consolas,monospace;color:#fff;text-shadow:0 0 12px rgba(34,211,238,.35)}
+#conBox{border-color:rgba(34,211,238,.3);border-radius:10px;background:rgba(3,10,24,.35)}
+#conBox>summary{background:linear-gradient(90deg,rgba(34,211,238,.12),rgba(59,130,246,.05));border-radius:10px}
+#conBox[open]>summary{border-radius:10px 10px 0 0}
+.ccard{background:rgba(3,10,24,.45);border-color:var(--line);color:var(--ink);border-radius:10px}
+.ccard:hover{border-color:rgba(34,211,238,.6);box-shadow:0 0 14px rgba(34,211,238,.12)}
+.ccard.on{border-color:var(--acc);background:linear-gradient(135deg,rgba(34,211,238,.14),rgba(59,130,246,.08));box-shadow:0 0 18px rgba(34,211,238,.2)}
+.catbar{background:rgba(3,10,24,.5);border-color:rgba(34,211,238,.3);border-radius:12px}
+.pcard{background:rgba(3,10,24,.45);border-color:var(--line);border-radius:12px;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pcard:hover{border-color:rgba(34,211,238,.7);box-shadow:0 0 18px rgba(34,211,238,.18);transform:translateY(-2px)}
+.pcard.on{border-color:var(--acc);background:linear-gradient(160deg,rgba(34,211,238,.16),rgba(59,130,246,.08));box-shadow:0 0 22px rgba(34,211,238,.28)}
+.pcard img{border-radius:8px}
+.pcard .pc{background:var(--acc);color:#04111f;box-shadow:0 0 10px var(--glow)}
+.psel{background:rgba(3,10,24,.5);border-color:var(--acc);box-shadow:0 0 24px rgba(34,211,238,.15)}
+.psel tr.incart td{background:rgba(34,211,238,.1)}
+.hcard{background:rgba(3,10,24,.45);border-color:var(--line);border-radius:10px;transition:border-color .15s}
+.hcard:hover{border-color:rgba(34,211,238,.5)}
+.hcard[open]{border-color:rgba(34,211,238,.55);box-shadow:0 0 18px rgba(34,211,238,.1)}
+.hcard[open]>summary{background:linear-gradient(90deg,rgba(34,211,238,.12),transparent)}
+.hcard .hno{font-family:ui-monospace,Consolas,monospace;color:#a5f3fc}
+.stepper{border-color:#24406a;background:rgba(2,8,23,.6)}
+.stepper button{background:rgba(34,211,238,.1);color:var(--acc)}
+.stepper button:active{background:var(--acc);color:#04111f}
+td .stepper input[type=number]{background:transparent;color:#fff}
+/* 對話框 */
+dialog{background:#0b1629;color:var(--ink);border:1px solid rgba(34,211,238,.4);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 40px rgba(34,211,238,.12)}
+dialog::backdrop{background:rgba(2,6,16,.7);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+/* 捲軸 */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#06101f}
+::-webkit-scrollbar-thumb{background:#1c3557;border-radius:6px;border:2px solid #06101f}
+::-webkit-scrollbar-thumb:hover{background:#25507f}
+a{color:var(--acc)}
+@media (prefers-reduced-motion:reduce){#appView .brand .sub::before{animation:none}}
 </style>
 </head>
 <body>

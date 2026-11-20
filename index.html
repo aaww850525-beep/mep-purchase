@@ -126,6 +126,18 @@ td .stepper input[type=number]{border:0;border-radius:0;width:72px;text-align:ce
 .ccard .d{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .ccard .flag{color:var(--bad);font-weight:700}
 tr.grp td{background:var(--accs);font-weight:700;border-top:2px solid var(--acc)}
+/* 叫料紀錄：一張叫料單一列，點開看細項 */
+.hcard{border:1px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:6px}
+.hcard.over{border-color:var(--bad)}
+.hcard>summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 12px;cursor:pointer;list-style:none}
+.hcard>summary::-webkit-details-marker{display:none}
+.hcard>summary::before{content:'▸';color:var(--acc);font-weight:700;width:10px}
+.hcard[open]>summary::before{content:'▾'}
+.hcard[open]>summary{border-bottom:1px solid var(--line);background:var(--accs);border-radius:8px 8px 0 0}
+.hcard .hdt{min-width:130px}.hcard .hno{min-width:150px}.hcard .hwho{min-width:56px}
+.hcard .hven{flex:1;min-width:120px}
+.hcard .hbtn{display:flex;gap:4px;margin-left:auto}
+.hcard .hbody{padding:8px 12px 10px}
 tr.del td{color:var(--sub);text-decoration:line-through}
 tr.del td .btn,tr.del td .tag,tr.del td .d{text-decoration:none}
 /* 型錄（圖例式叫料） */
@@ -229,9 +241,9 @@ details summary{cursor:pointer}
 </section>
 
 <section id="s-hist">
-  <div class="row"><label>期間 <input type="date" id="hFrom"> ～ <input type="date" id="hTo"></label><label><input type="checkbox" id="hOver"> 只看含超量</label><button class="btn sm right" id="exportCsv">匯出 CSV</button></div>
+  <div class="row"><label>期間 <input type="date" id="hFrom"> ～ <input type="date" id="hTo"></label><label><input type="checkbox" id="hOver"> 只看含超量</label><button class="btn sm right" id="histAll">全部展開</button><button class="btn sm" id="exportCsv">匯出 CSV</button></div>
   <div class="stat" id="histStat"></div>
-  <div class="tw"><table><thead><tr><th>日期</th><th>叫料單號</th><th>叫料人</th><th>廠商・品名</th><th class="n">數量</th><th class="n">下單後累計／合約</th><th>狀態</th><th>用途・交貨</th></tr></thead><tbody id="histBody"></tbody></table></div>
+  <div id="histList"></div>
 </section>
 
 <section id="s-cons">
@@ -755,15 +767,40 @@ function histRows() {
 }
 function renderHist() {
   const rows = histRows();
-  $('#histStat').textContent = `${S.orders.length} 張叫料單，符合條件 ${rows.length} 筆明細`;
-  $('#histBody').innerHTML = rows.slice(0, 800).map(({ o, l, d }) => `<tr class="${l.over ? 'over' : Number(l.qty) === 0 ? 'del' : ''}"><td class="nw">${esc(d)}<div class="d">${esc(localTime(o.ts))}</div></td><td class="nw">${esc(o.no)}<div><button class="btn sm" data-print="${esc(o.no)}" title="重新列印進料申請單">🖨 列印</button>${canEdit(o) ? ` <button class="btn sm" data-edit="${esc(o.no)}" title="修改這張叫料單的數量">✏ 修改</button>` : ''}</div></td><td class="nw">${esc(o.userName)}</td>
-<td class="nm">${esc(l.vendor)}｜${esc(l.name)}<div class="d">${esc(l.cno)}</div></td><td class="n">${fmt(l.qty)} ${esc(l.unit)}</td><td class="n">${fmt(l.after)} / ${l.cqty ? fmt(l.cqty) : '金額控管'}</td><td>${l.over ? '<span class="tag bad">超量</span>' + (l.reason ? `<div class="d">${esc(l.reason)}</div>` : '') : /^已刪除/.test(l.state || '') ? '<span class="tag">已刪除</span>' : /^已修改/.test(l.state || '') ? '<span class="tag warn">已修改</span>' : '<span class="tag ok">正常</span>'}${/^已(修改|刪除)/.test(l.state || '') ? `<div class="d">${esc(String(l.state).replace(/^已(修改|刪除)/, ''))}</div>` : ''}</td><td class="d">${esc([o.needDate ? '需用 ' + o.needDate : '', o.place, o.note ? '交貨：' + o.note : ''].filter(Boolean).join('・'))}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">尚無叫料紀錄</td></tr>';
+  // 依叫料單分組：一張叫料單一列，點開才看細項
+  const by = new Map();
+  rows.forEach(r => { if (!by.has(r.o.no)) by.set(r.o.no, { o: r.o, d: r.d, ls: [] }); by.get(r.o.no).ls.push(r.l); });
+  S.histOpen = S.histOpen || new Set();
+  const list = [...by.values()], max = 300;
+  $('#histStat').textContent = `${S.orders.length} 張叫料單，符合條件 ${list.length} 張（${rows.length} 筆明細）。點叫料單即可展開／收合細項。` + (list.length > max ? `只顯示最近 ${max} 張，請用期間或搜尋縮小範圍。` : '');
+  const stTag = l => l.over ? '<span class="tag bad">超量</span>' : /^已刪除/.test(l.state || '') ? '<span class="tag">已刪除</span>' : /^已修改/.test(l.state || '') ? '<span class="tag warn">已修改</span>' : '<span class="tag ok">正常</span>';
+  $('#histList').innerHTML = list.slice(0, max).map(({ o, d, ls }) => {
+    const live = (o.lines || []).filter(l => Number(l.qty) > 0);
+    const vendors = [...new Set(live.map(l => l.vendor))];
+    const mod = (o.lines || []).some(l => /^已(修改|刪除)/.test(l.state || '')), over = ls.some(l => l.over);
+    const info = [o.needDate ? '需用 ' + o.needDate : '', o.place ? '用途：' + o.place : '', o.note ? '交貨：' + o.note : ''].filter(Boolean).join('・');
+    return `<details class="hcard${over ? ' over' : ''}" data-no="${esc(o.no)}"${S.histOpen.has(o.no) ? ' open' : ''}><summary>
+<span class="hdt">${esc(d)} <span class="d">${esc(localTime(o.ts))}</span></span><b class="hno">${esc(o.no)}</b><span class="hwho">${esc(o.userName)}</span>
+<span class="hven">${esc(vendors.join('、') || '（已全部刪除）')}</span><span class="d">${live.length} 項</span>${mod ? '<span class="tag warn">已修改</span>' : ''}${over ? '<span class="tag bad">超量</span>' : ''}
+<span class="hbtn"><button class="btn sm" data-print="${esc(o.no)}" title="重新列印進料申請單">🖨 列印</button>${canEdit(o) ? `<button class="btn sm" data-edit="${esc(o.no)}" title="修改這張叫料單的數量">✏ 修改</button>` : ''}</span></summary>
+<div class="hbody">${info ? `<div class="d" style="margin-bottom:6px">${esc(info)}</div>` : ''}<div class="tw"><table><thead><tr><th>廠商・品名</th><th class="n">數量</th><th class="n">下單後累計／合約</th><th>狀態</th></tr></thead><tbody>` +
+      ls.map(l => `<tr class="${l.over ? 'over' : Number(l.qty) === 0 ? 'del' : ''}"><td class="nm">${esc(l.vendor)}｜${esc(l.name)}<div class="d">${esc(l.cno)}${l.memo ? '・' + esc(l.memo) : ''}</div></td><td class="n">${fmt(l.qty)} ${esc(l.unit)}</td><td class="n">${fmt(l.after)} / ${l.cqty ? fmt(l.cqty) : '金額控管'}</td><td>${stTag(l)}${/^已(修改|刪除)/.test(l.state || '') ? `<div class="d">${esc(String(l.state).replace(/^已(修改|刪除)/, ''))}</div>` : ''}${l.over && l.reason ? `<div class="d">${esc(l.reason)}</div>` : ''}</td></tr>`).join('') +
+      '</tbody></table></div></div></details>';
+  }).join('') || '<div class="muted" style="padding:12px">尚無叫料紀錄</div>';
 }
 ['#hFrom', '#hTo', '#hOver'].forEach(s => $(s).onchange = renderHist);
-$('#histBody').addEventListener('click', e => {
-  const ed = e.target.closest('[data-edit]'); if (ed) { editOrder(S.orders.find(o => o.no === ed.dataset.edit)); return; }
-  const b = e.target.closest('[data-print]'); if (!b) return; printOrder(S.orders.find(o => o.no === b.dataset.print));
+$('#histList').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'); if (ed) { e.preventDefault(); editOrder(S.orders.find(o => o.no === ed.dataset.edit)); return; }
+  const b = e.target.closest('[data-print]'); if (b) { e.preventDefault(); printOrder(S.orders.find(o => o.no === b.dataset.print)); }
 });
+// 記住展開中的叫料單（重新整理清單後維持展開）
+$('#histList').addEventListener('toggle', e => { const d = e.target; if (!d.dataset || !d.dataset.no) return; S.histOpen = S.histOpen || new Set(); d.open ? S.histOpen.add(d.dataset.no) : S.histOpen.delete(d.dataset.no); }, true);
+$('#histAll').onclick = () => {
+  const ds = [...document.querySelectorAll('#histList details')], open = ds.some(d => !d.open);
+  S.histOpen = S.histOpen || new Set();
+  ds.forEach(d => { d.open = open; open ? S.histOpen.add(d.dataset.no) : S.histOpen.delete(d.dataset.no); });
+  $('#histAll').textContent = open ? '全部收合' : '全部展開';
+};
 
 /* ---------- 修改已送出的叫料單（申請人本人或 admin） ---------- */
 const canEdit = o => !!(S.user && o && (S.user.id === 'admin' || o.userName === S.user.name));

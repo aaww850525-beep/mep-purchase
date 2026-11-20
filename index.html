@@ -126,6 +126,10 @@ td .stepper input[type=number]{border:0;border-radius:0;width:72px;text-align:ce
 .ccard .d{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .ccard .flag{color:var(--bad);font-weight:700}
 tr.grp td{background:var(--accs);font-weight:700;border-top:2px solid var(--acc)}
+tr.grp.tog td{cursor:pointer;user-select:none}
+tr.grp.tog:hover td{filter:brightness(.97)}
+tr.grp .car{display:inline-block;width:22px;color:var(--acc)}
+tr.grp .gbar{float:right;font-weight:400;font-size:12px}
 /* 叫料紀錄：一張叫料單一列，點開看細項 */
 .hcard{border:1px solid var(--line);border-radius:8px;background:var(--card);margin-bottom:6px}
 .hcard.over{border-color:var(--bad)}
@@ -210,7 +214,7 @@ details summary{cursor:pointer}
 <section id="s-pick" class="on">
   <div class="chips" id="stChips"></div>
   <div id="tableView">
-  <details id="conBox" open><summary><b>選擇廠商合約</b>：<span id="conSel">全部合約</span> <span class="d" id="conHint">（點此收合）</span></summary>
+  <details id="conBox"><summary><b>選擇廠商合約</b>：<span id="conSel">全部合約</span> <span class="d" id="conHint">（點此收合）</span></summary>
   <div class="cgrid" id="conGrid"></div></details>
   <div class="row" id="lumpRow"><label class="right"><input type="checkbox" id="fHideLump" checked> 隱藏「式」計價工項</label></div>
   <div class="row" id="conHead"></div>
@@ -500,30 +504,57 @@ function renderPick() {
   if (isCat) { renderCatalog(S.con); $('#pickStat').innerHTML = ''; return; }
   const list = filteredItems(); const max = 600;
   const inCart = new Set(S.cart.map(l => l.id));
-  const nCon = new Set(list.map(i => i.cno)).size;
-  $('#pickStat').innerHTML = `找到 ${list.length} 項（${nCon} 份合約）` + (list.length > max ? `，只顯示前 ${max} 項，請點選合約或輸入搜尋縮小範圍` : '');
-  let lastC = null, lastS = null;
-  $('#pickBody').innerHTML = list.slice(0, max).map(it => {
-    const st = status(it), rem = it.qty - st.tot;
-    let head = '';
-    if (it.pool) {
-      if (it.cno !== lastC) { lastC = it.cno; lastS = null; const c = S.conBy[it.cno]; head += `<tr class="grp"><td colspan="10">${esc(c.vendor)}｜${esc(c.title)} <span class="d">${esc(c.cno)}・金額控管：已叫 NT$ ${fmt(st.tot, 0)} / NT$ ${fmt(st.cap, 0)}（未稅）</span> <a href="#" data-con="${esc(c.cno)}">🖼 圖例叫料 ›</a></td></tr>`; }
-      if (it.sec !== lastS) { lastS = it.sec; head += `<tr class="sec"><td colspan="10">${esc(it.sec)}</td></tr>`; }
-      return head + `<tr class="${st.k === 'ok' ? '' : st.k === 'bad' ? 'over' : 'warn'}"><td><button class="btn sm ${inCart.has(it.id) ? 'p' : ''}" data-add="${it.id}" title="加入叫料單">${inCart.has(it.id) ? '✓' : '＋'}</button></td>
-<td class="nw">${esc(it.vendor)}</td><td class="nw d c">${esc(it.no)}</td><td class="nm">${esc(it.name)} <span class="tag">${esc(it.spec)}</span><div class="d">牌價 ${fmt(it.list)} × ${Math.round(it.rate * 100)}%</div></td>
+  // 預設只顯示藍色合約列；點合約列才展開品項。輸入搜尋或選了狀態篩選時直接全部展開
+  const filtering = !!$('#q').value.trim() || S.status !== 'all';
+  const collapsed = !S.con && !filtering;
+  S.pickOpen = S.pickOpen || new Set();
+  const groups = [], byC = {};
+  list.forEach(it => { if (!byC[it.cno]) { byC[it.cno] = []; groups.push(it.cno); } byC[it.cno].push(it); });
+  const nOpen = groups.filter(c => S.pickOpen.has(c)).length;
+  $('#pickStat').innerHTML = collapsed
+    ? `共 ${groups.length} 份合約、${list.length} 項。<b>點選藍色合約列展開品項</b>；有 🖼 的合約點選後進入圖例叫料。 <a href="#" id="pickAll">${nOpen === groups.length && groups.length ? '全部收合' : '全部展開'}</a>`
+    : `找到 ${list.length} 項（${groups.length} 份合約）` + (list.length > max ? `，只顯示前 ${max} 項，請點選合約或輸入搜尋縮小範圍` : '');
+  const itemRow = it => {
+    const st = status(it), rem = it.qty - st.tot, cls = st.k === 'ok' ? '' : st.k === 'bad' ? 'over' : 'warn';
+    const btn = `<td><button class="btn sm ${inCart.has(it.id) ? 'p' : ''}" data-add="${it.id}" title="加入叫料單">${inCart.has(it.id) ? '✓' : '＋'}</button></td>`;
+    if (it.pool) return `<tr class="${cls}">${btn}<td class="nw">${esc(it.vendor)}</td><td class="nw d c">${esc(it.no)}</td><td class="nm">${esc(it.name)} <span class="tag">${esc(it.spec)}</span><div class="d">牌價 ${fmt(it.list)} × ${Math.round(it.rate * 100)}%</div></td>
 <td class="nw">${esc(it.unit)}</td><td class="n d">金額控管</td><td class="n">${fmt(used(it.id))}</td><td class="n d">—</td><td class="nw">${bar(st)}</td><td class="n">${fmt(it.price)}</td></tr>`;
-    }
-    if (it.cno !== lastC) { lastC = it.cno; lastS = null; const c = S.conBy[it.cno]; const n = list.filter(i => i.cno === it.cno).length; head += `<tr class="grp"><td colspan="10">${esc(c.vendor)}｜${esc(c.title)} <span class="d">${esc(c.cno)}・${n} 項</span></td></tr>`; }
-    const sec = it.sec || '';
-    if (sec && sec !== lastS) { lastS = sec; head += `<tr class="sec"><td colspan="10">${esc(sec)}</td></tr>`; }
-    return head + `<tr class="${st.k === 'ok' ? '' : st.k === 'bad' ? 'over' : 'warn'}"><td><button class="btn sm ${inCart.has(it.id) ? 'p' : ''}" data-add="${it.id}" title="加入叫料單">${inCart.has(it.id) ? '✓' : '＋'}</button></td>
-<td class="nw">${esc(it.vendor)}</td><td class="nw d c">${esc(it.no)}</td>
+    return `<tr class="${cls}">${btn}<td class="nw">${esc(it.vendor)}</td><td class="nw d c">${esc(it.no)}</td>
 <td class="nm">${esc(it.name)}${it.spec ? ` <span class="tag">${esc(it.spec)}</span>` : ''}${it.note ? `<div class="d">${esc(it.note)}</div>` : ''}</td>
 <td class="nw">${esc(it.unit)}</td><td class="n">${fmt(it.qty)}</td><td class="n">${fmt(st.tot)}</td><td class="n">${fmt(rem)}</td><td class="nw">${bar(st)}</td><td class="n">${it.price === 1 && it.unit === '元' ? '—' : fmt(it.price)}</td></tr>`;
+  };
+  let shown = 0;
+  $('#pickBody').innerHTML = groups.map(cno => {
+    const c = S.conBy[cno], its = byC[cno], pool = poolCon(cno), p = conProgress(cno);
+    const open = !collapsed || S.pickOpen.has(cno);
+    const nCart = its.filter(i => inCart.has(i.id)).length;
+    const info = pool ? `🖼 圖例叫料・${pool.n} 種規格・已叫 NT$ ${fmt(poolUsed(cno), 0)} / ${fmt(pool.cap, 0)}` : `${its.length} 項`;
+    let html = `<tr class="grp${collapsed ? ' tog' : ''}" ${collapsed ? `data-grp="${esc(cno)}"` : ''}><td colspan="10">${collapsed ? `<span class="car">${pool ? '🖼' : open ? '▾' : '▸'}</span>` : ''}${esc(c.vendor)}｜${esc(c.title)} <span class="d">${esc(cno)}・${info}</span>${nCart ? ` <span class="tag ok">叫料單 ${nCart}</span>` : ''}${p.nBad ? ` <span class="tag bad">超量 ${p.nBad}</span>` : p.nWarn ? ` <span class="tag warn">接近 ${p.nWarn}</span>` : ''}<span class="gbar">${bar(p)}</span>${!collapsed && pool ? ` <a href="#" data-con="${esc(cno)}">🖼 圖例叫料 ›</a>` : ''}</td></tr>`;
+    if (!open || (collapsed && pool)) return html;
+    let lastS = null;
+    its.forEach(it => {
+      if (shown >= max) return; shown++;
+      const sec = it.sec || '';
+      if (sec && sec !== lastS) { lastS = sec; html += `<tr class="sec"><td colspan="10">${esc(sec)}</td></tr>`; }
+      html += itemRow(it);
+    });
+    return html;
   }).join('') || '<tr><td colspan="10" class="muted">沒有符合條件的品項</td></tr>';
 }
+$('#pickStat').addEventListener('click', e => {
+  if (e.target.id !== 'pickAll') return; e.preventDefault();
+  const cs = [...new Set(filteredItems().map(i => i.cno))].filter(c => !poolCon(c));
+  const allOpen = cs.every(c => S.pickOpen.has(c));
+  cs.forEach(c => allOpen ? S.pickOpen.delete(c) : S.pickOpen.add(c)); renderPick();
+});
 $('#pickBody').addEventListener('click', e => {
   const a = e.target.closest('[data-con]'); if (a) { e.preventDefault(); S.con = a.dataset.con; $('#conBox').open = false; renderPick(); window.scrollTo(0, 0); return; }
+  const g = e.target.closest('[data-grp]');
+  if (g && !e.target.closest('[data-add]')) {
+    const cno = g.dataset.grp;
+    if (poolCon(cno)) { S.con = cno; $('#conBox').open = false; renderPick(); window.scrollTo(0, 0); return; }   // 有型錄的合約直接進圖例叫料
+    S.pickOpen.has(cno) ? S.pickOpen.delete(cno) : S.pickOpen.add(cno); renderPick(); return;
+  }
   const b = e.target.closest('[data-add]'); if (!b) return; addToCart(b.dataset.add);
 });
 

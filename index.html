@@ -167,8 +167,8 @@ tr.sec td{background:var(--bg);color:var(--sub);font-size:13px;font-weight:600}
 @keyframes lgScan{to{top:110%}}
 @keyframes lgBlink{50%{opacity:.25}}
 @keyframes lgSweep{to{transform:translateX(260%) skewX(-20deg)}}
-.lg-wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(360px,50%) 1fr;min-height:100vh}
-.lg-hero{padding:56px 60px;display:flex;flex-direction:column;gap:28px}
+.lg-wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,540px) minmax(0,440px);justify-content:center;align-items:center;gap:44px;max-width:1120px;min-height:100vh;margin:0 auto;padding:40px 28px}
+.lg-hero{display:flex;flex-direction:column;gap:24px}
 .lg-chip{display:inline-flex;align-items:center;gap:8px;width:max-content;font:600 11px/1 ui-monospace,Consolas,"Courier New",monospace;letter-spacing:.18em;color:var(--n-cy);border:1px solid var(--n-line);background:rgba(34,211,238,.06);border-radius:999px;padding:7px 12px}
 .lg-chip i{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px #34d399;animation:lgBlink 1.6s ease-in-out infinite}
 .lg-brand{display:flex;gap:16px;align-items:center}
@@ -177,20 +177,20 @@ tr.sec td{background:var(--bg);color:var(--sub);font-size:13px;font-weight:600}
 .lg-hero h1{margin:4px 0 0;font-size:36px;letter-spacing:.12em;line-height:1.2;background:linear-gradient(90deg,#fff 0%,#a5f3fc 55%,#93c5fd 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 30px rgba(34,211,238,.25)}
 .lg-en{font:600 12px/1 ui-monospace,Consolas,monospace;letter-spacing:.32em;color:var(--n-sub);margin-top:8px}
 .lg-lead{font-size:15px;line-height:1.85;color:#c3d4ee;max-width:30em;margin:0}
-.lg-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:32em}
-.lg-stats div{border:1px solid var(--n-line);background:var(--n-glass);border-radius:12px;padding:12px 14px;position:relative;overflow:hidden}
-.lg-stats div::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--n-cy),var(--n-bl))}
-.lg-stats b{display:block;font:700 26px/1.1 ui-monospace,Consolas,monospace;color:#fff;text-shadow:0 0 14px rgba(34,211,238,.45)}
-.lg-stats span{font-size:12px;color:var(--n-sub)}
-.lg-feat{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-width:32em}
+.lg-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lg-pj{border:1px solid var(--n-line);background:var(--n-glass);border-radius:12px;padding:12px 14px 12px 16px;position:relative;overflow:hidden}
+.lg-pj::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--n-cy),var(--n-bl))}
+.lg-pjn{font-size:15px;font-weight:700;letter-spacing:.1em;color:#fff;margin-bottom:8px}.lg-pjs{display:flex;gap:18px}.lg-pjs b{display:block;font:700 24px/1.1 ui-monospace,Consolas,monospace;color:#fff;text-shadow:0 0 14px rgba(34,211,238,.45)}
+.lg-pjs span{font-size:12px;color:var(--n-sub)}
+.lg-feat{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .lg-feat li{display:flex;gap:14px;align-items:center;border:1px solid var(--n-line);background:var(--n-glass);border-radius:12px;padding:11px 14px;transition:border-color .2s,box-shadow .2s}
 .lg-feat li:hover{border-color:rgba(34,211,238,.6);box-shadow:0 0 22px rgba(34,211,238,.15)}
 .lg-feat .ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--n-cy);background:rgba(34,211,238,.1);box-shadow:inset 0 0 0 1px rgba(34,211,238,.3)}
 .lg-feat .ic svg{width:21px;height:21px}
 .lg-feat b{display:block;font-size:15px;letter-spacing:.05em}
 .lg-feat span{font-size:13px;color:var(--n-sub)}
-.lg-foot{margin-top:auto;font:12px/1.4 ui-monospace,Consolas,monospace;color:var(--n-sub);letter-spacing:.08em}
-.lg-main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 24px}
+.lg-foot{font:12px/1.4 ui-monospace,Consolas,monospace;color:var(--n-sub);letter-spacing:.08em}
+.lg-main{display:flex;flex-direction:column;align-items:center;justify-content:center}
 #login{position:relative;width:100%;max-width:440px;background:var(--n-glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--n-line);border-radius:20px;padding:34px 32px 26px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 30px 80px rgba(0,0,0,.45),0 0 60px rgba(34,211,238,.08)}
 #login::before{content:'';position:absolute;left:24px;right:24px;top:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--n-cy),var(--n-bl),transparent);border-radius:2px;box-shadow:0 0 14px var(--n-cy)}
 #login h2{margin:0;font-size:24px;letter-spacing:.12em;color:#fff}
@@ -224,14 +224,14 @@ tr.sec td{background:var(--bg);color:var(--sub);font-size:13px;font-weight:600}
 .lg-copy{margin-top:16px;font-size:12px;color:var(--n-sub)}
 @media (prefers-reduced-motion:reduce){#loginView::before,#loginView::after,#loginBtn::after,.lg-chip i{animation:none}}
 @media (max-width:860px){
-  .lg-wrap{grid-template-columns:1fr;min-height:0}
-  .lg-hero{padding:24px 18px 8px;gap:14px}
+  .lg-wrap{grid-template-columns:1fr;min-height:0;gap:14px;padding:22px 16px 32px}
+  .lg-hero{gap:14px}
   .lg-hero h1{font-size:26px}
   .lg-brand .logo{width:48px;height:48px;border-radius:13px}
   .lg-lead{font-size:13.5px;line-height:1.7}
   .lg-feat,.lg-foot{display:none}
-  .lg-stats b{font-size:20px}
-  .lg-main{padding:12px 16px 32px;justify-content:flex-start}
+  .lg-pjs b{font-size:20px}
+  .lg-main{justify-content:flex-start}
   #login{padding:26px 18px 20px;border-radius:18px}
 }
 /* dialog */
@@ -342,7 +342,7 @@ a{color:var(--acc)}
       <p class="lg-lead">依用印合約叫料，數量與金額即時累計；超出合約自動攔截，進料申請單一鍵產生。</p>
       <div class="lg-stats" id="lgStats"></div>
       <ul class="lg-feat">
-        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><div><b>合約綁定</b><span>只能叫用印合約內的設備品項與數量</span></div></li>
+        <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><div><b>合約綁定</b><span>已核定合約品項及數量</span></div></li>
         <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><div><b>累計與警示</b><span>接近上限提醒，超量不可下單</span></div></li>
         <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></span><div><b>進料申請單</b><span>依廠商自動分單，A4 一鍵列印</span></div></li>
       </ul>
@@ -355,9 +355,9 @@ a{color:var(--acc)}
         <label>選擇專案</label>
         <div class="projs" id="projPick"></div>
         <label for="lu">使用人帳號</label>
-        <div class="fld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input type="text" id="lu" autocomplete="username" placeholder="帳號，例如 js882"></div>
+        <div class="fld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input type="text" id="lu" autocomplete="username" placeholder="工號"></div>
         <label for="lp">密碼</label>
-        <div class="fld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" id="lp" autocomplete="current-password" placeholder="使用人專用密碼"><button type="button" class="eye" id="lpEye" aria-label="顯示密碼">顯示</button></div>
+        <div class="fld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" id="lp" autocomplete="current-password"><button type="button" class="eye" id="lpEye" aria-label="顯示密碼">顯示</button></div>
         <label class="rem"><input type="checkbox" id="lRem" checked> 記住我的帳號</label>
         <div id="loginErr"></div>
         <button class="btn p" id="loginBtn">登入</button>
@@ -547,9 +547,7 @@ $('#modeInfo').textContent = apiUrl() ? '帳號由 Google 試算表「使用者�
 
 // 登入畫面：統計數字、顯示密碼、記住帳號
 (() => {
-  const nCon = projKeys.reduce((s, k) => s + DATA[k].contracts.length, 0);
-  const nItem = projKeys.reduce((s, k) => { const lab = new Set(DATA[k].contracts.filter(c => c.grp === '勞務工程').map(c => c.cno)); return s + DATA[k].items.filter(i => !lab.has(i.cno)).length; }, 0);
-  $('#lgStats').innerHTML = [[projKeys.length, '工程專案'], [nCon, '用印合約'], [nItem.toLocaleString('zh-TW'), '可叫料品項']].map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('');
+  $('#lgStats').innerHTML = projKeys.map(k => { const lab = new Set(DATA[k].contracts.filter(c => c.grp === '勞務工程').map(c => c.cno)); const n = DATA[k].items.filter(i => !lab.has(i.cno)).length; return `<div class="lg-pj"><div class="lg-pjn">${esc(DATA[k].name)}</div><div class="lg-pjs"><div><b>${DATA[k].contracts.length}</b><span>用印合約</span></div><div><b>${n.toLocaleString('zh-TW')}</b><span>可叫料品項</span></div></div></div>`; }).join('');
   $('#lpEye').onclick = () => { const s = $('#lp').type === 'password'; $('#lp').type = s ? 'text' : 'password'; $('#lpEye').textContent = s ? '隱藏' : '顯示'; $('#lp').focus(); };
   const last = store.get('jlx_lastUser', ''); if (last) { $('#lu').value = last; }
   $('#lRem').checked = store.get('jlx_remUser', true) !== false;

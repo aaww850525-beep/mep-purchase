@@ -126,6 +126,8 @@ td .stepper input[type=number]{border:0;border-radius:0;width:72px;text-align:ce
 .ccard .d{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
 .ccard .flag{color:var(--bad);font-weight:700}
 tr.grp td{background:var(--accs);font-weight:700;border-top:2px solid var(--acc)}
+tr.del td{color:var(--sub);text-decoration:line-through}
+tr.del td .btn,tr.del td .tag,tr.del td .d{text-decoration:none}
 /* 型錄（圖例式叫料） */
 .catbar{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;background:var(--card);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between;font-size:14px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:12px}
@@ -705,7 +707,7 @@ function printOrder(order) {
   if (!order) return;
   const company = CFG.companyName || '久舜營造股份有限公司';
   const projName = DATA[S.proj].name;
-  const byV = {}; (order.lines || []).forEach(l => (byV[l.vendor] = byV[l.vendor] || []).push(l));
+  const byV = {}; (order.lines || []).filter(l => Number(l.qty) > 0).forEach(l => (byV[l.vendor] = byV[l.vendor] || []).push(l));   // 已刪除（數量 0）的項目不列印
   const vendors = Object.keys(byV);
   const MIN_ROWS = 14;
   const pages = vendors.map((v, vi) => {
@@ -754,11 +756,75 @@ function histRows() {
 function renderHist() {
   const rows = histRows();
   $('#histStat').textContent = `${S.orders.length} 張叫料單，符合條件 ${rows.length} 筆明細`;
-  $('#histBody').innerHTML = rows.slice(0, 800).map(({ o, l, d }) => `<tr class="${l.over ? 'over' : ''}"><td class="nw">${esc(d)}<div class="d">${esc(localTime(o.ts))}</div></td><td class="nw">${esc(o.no)}<div><button class="btn sm" data-print="${esc(o.no)}" title="重新列印進料申請單">🖨 列印</button></div></td><td class="nw">${esc(o.userName)}</td>
-<td class="nm">${esc(l.vendor)}｜${esc(l.name)}<div class="d">${esc(l.cno)}</div></td><td class="n">${fmt(l.qty)} ${esc(l.unit)}</td><td class="n">${fmt(l.after)} / ${fmt(l.cqty)}</td><td>${l.over ? '<span class="tag bad">超量</span>' + (l.reason ? `<div class="d">${esc(l.reason)}</div>` : '') : '<span class="tag ok">正常</span>'}</td><td class="d">${esc([o.needDate ? '需用 ' + o.needDate : '', o.place, o.note ? '交貨：' + o.note : ''].filter(Boolean).join('・'))}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">尚無叫料紀錄</td></tr>';
+  $('#histBody').innerHTML = rows.slice(0, 800).map(({ o, l, d }) => `<tr class="${l.over ? 'over' : Number(l.qty) === 0 ? 'del' : ''}"><td class="nw">${esc(d)}<div class="d">${esc(localTime(o.ts))}</div></td><td class="nw">${esc(o.no)}<div><button class="btn sm" data-print="${esc(o.no)}" title="重新列印進料申請單">🖨 列印</button>${canEdit(o) ? ` <button class="btn sm" data-edit="${esc(o.no)}" title="修改這張叫料單的數量">✏ 修改</button>` : ''}</div></td><td class="nw">${esc(o.userName)}</td>
+<td class="nm">${esc(l.vendor)}｜${esc(l.name)}<div class="d">${esc(l.cno)}</div></td><td class="n">${fmt(l.qty)} ${esc(l.unit)}</td><td class="n">${fmt(l.after)} / ${l.cqty ? fmt(l.cqty) : '金額控管'}</td><td>${l.over ? '<span class="tag bad">超量</span>' + (l.reason ? `<div class="d">${esc(l.reason)}</div>` : '') : /^已刪除/.test(l.state || '') ? '<span class="tag">已刪除</span>' : /^已修改/.test(l.state || '') ? '<span class="tag warn">已修改</span>' : '<span class="tag ok">正常</span>'}${/^已(修改|刪除)/.test(l.state || '') ? `<div class="d">${esc(String(l.state).replace(/^已(修改|刪除)/, ''))}</div>` : ''}</td><td class="d">${esc([o.needDate ? '需用 ' + o.needDate : '', o.place, o.note ? '交貨：' + o.note : ''].filter(Boolean).join('・'))}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">尚無叫料紀錄</td></tr>';
 }
 ['#hFrom', '#hTo', '#hOver'].forEach(s => $(s).onchange = renderHist);
-$('#histBody').addEventListener('click', e => { const b = e.target.closest('[data-print]'); if (!b) return; printOrder(S.orders.find(o => o.no === b.dataset.print)); });
+$('#histBody').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'); if (ed) { editOrder(S.orders.find(o => o.no === ed.dataset.edit)); return; }
+  const b = e.target.closest('[data-print]'); if (!b) return; printOrder(S.orders.find(o => o.no === b.dataset.print));
+});
+
+/* ---------- 修改已送出的叫料單（申請人本人或 admin） ---------- */
+const canEdit = o => !!(S.user && o && (S.user.id === 'admin' || o.userName === S.user.name));
+// 檢查修改後是否超出合約：其他叫料單的累計＋本單修改後數量
+function editCheck(o, newQ) {
+  const bad = [], poolOld = {}, poolNew = {};
+  o.lines.forEach((l, i) => {
+    const it = S.byId[l.id], q = newQ[i], oq = Number(l.qty) || 0;
+    if (it && it.pool && poolCon(it.pool)) { poolOld[it.pool] = (poolOld[it.pool] || 0) + oq * l.price; poolNew[it.pool] = (poolNew[it.pool] || 0) + q * l.price; return; }
+    if (it && it.qty > 0 && q !== oq && used(l.id) - oq + q > it.qty + 1e-9) bad.push({ i, msg: `${l.name}：可叫 ${fmt(Math.max(0, it.qty - (used(l.id) - oq)))} ${l.unit}` });
+  });
+  Object.keys(poolNew).forEach(cno => {
+    const p = poolCon(cno), amt = poolUsed(cno) - poolOld[cno] + poolNew[cno];
+    if (amt > p.cap + 0.5) bad.push({ cno, msg: `${S.conBy[cno].vendor}｜${S.conBy[cno].title}：修改後累計 NT$ ${fmt(amt, 0)}，超過合約金額 NT$ ${fmt(p.cap, 0)}` });
+  });
+  return bad;
+}
+function editOrder(o) {
+  if (!o) return;
+  if (!canEdit(o)) { alert('只有申請人或管理員可以修改這張叫料單。'); return; }
+  const newQ = o.lines.map(l => Number(l.qty) || 0);
+  const rowsHtml = () => o.lines.map((l, i) => `<tr class="${newQ[i] !== (Number(l.qty) || 0) ? 'warn' : ''}"><td class="nm">${esc(l.vendor)}｜${esc(l.name)}<div class="d">${esc(l.cno)}</div></td><td class="n">${fmt(l.qty)} ${esc(l.unit)}</td><td><div class="stepper"><button type="button" data-edec="${i}">－</button><input type="number" min="0" step="any" inputmode="decimal" data-eq="${i}" value="${newQ[i]}"><button type="button" data-einc="${i}">＋</button></div></td></tr>`).join('');
+  const msg = () => { const bad = editCheck(o, newQ); $('#editMsg').innerHTML = bad.length ? `<div class="note bad"><b>超出合約，不可修改：</b><br>${bad.map(b => esc(b.msg)).join('<br>')}</div>` : ''; $('#dlgYes').disabled = !!bad.length; return bad; };
+  $('#dlgBody').innerHTML = `<h3 style="margin-top:0">修改叫料單 ${esc(o.no)}</h3><div class="stat">申請人 ${esc(o.userName)}・${esc(localDate(o.ts))}。改好數量後按「儲存修改」；數量改成 0 即刪除該項（後台保留紀錄）。修改後請重新列印進料申請單。</div>
+<div class="tw"><table><thead><tr><th>品名</th><th class="n">原數量</th><th>修改為</th></tr></thead><tbody id="editBody">${rowsHtml()}</tbody></table></div><div id="editMsg" style="margin-top:8px"></div>`;
+  const d = $('#dlg'); $('#dlgYes').textContent = '儲存修改'; $('#dlgNo').textContent = '取消';
+  const reset = () => { $('#dlgYes').textContent = '確定'; $('#dlgNo').textContent = '取消'; $('#dlgYes').disabled = false; $('#dlgBody').onclick = null; $('#dlgBody').oninput = null; };
+  $('#dlgBody').onclick = e => {
+    const b = e.target.closest('[data-einc],[data-edec]'); if (!b) return;
+    const i = Number(b.dataset.einc != null ? b.dataset.einc : b.dataset.edec), step = o.lines[i].unit === '元' ? 1000 : 1;
+    newQ[i] = Math.max(0, newQ[i] + (b.dataset.einc != null ? step : -step)); $('#editBody').innerHTML = rowsHtml(); msg();
+  };
+  $('#dlgBody').oninput = e => {
+    const i = e.target.dataset.eq; if (i == null) return;
+    newQ[i] = Math.max(0, Number(e.target.value) || 0);
+    const tr = e.target.closest('tr'); if (tr) tr.className = newQ[i] !== (Number(o.lines[i].qty) || 0) ? 'warn' : '';
+    msg();
+  };
+  $('#dlgNo').onclick = () => { d.close(); reset(); }; d.oncancel = () => reset();
+  $('#dlgYes').onclick = async () => {
+    if (msg().length) return;
+    const ch = o.lines.map((l, i) => ({ l, i })).filter(x => newQ[x.i] !== (Number(x.l.qty) || 0));
+    if (!ch.length) { d.close(); reset(); return; }
+    $('#dlgYes').disabled = true;
+    try {
+      const lines = ch.map(({ l, i }) => { const it = S.byId[l.id], pc = it && it.pool && poolCon(it.pool); return Object.assign({ id: l.id, qty: newQ[i] }, pc ? { pool: it.pool, poolCap: pc.cap } : {}); });
+      if (apiUrl()) await api('update', { no: o.no, lines });
+      else {   // 單機模式
+        const all = store.get(localKey(), []), lo = all.find(x => x.no === o.no);
+        if (lo) { lines.forEach(x => { const ll = lo.lines.find(y => y.id === x.id); if (ll) { ll.state = (x.qty === 0 ? '已刪除' : '已修改') + `（原 ${ll.qty}）`; ll.qty = x.qty; } }); store.set(localKey(), all); }
+      }
+      d.close(); reset();
+      await refreshOrders();
+      const no = o.no, fresh = S.orders.find(x => x.no === no);
+      if (fresh && fresh.lines.some(l => Number(l.qty) > 0) && await confirmDlg(`<h3 style="margin-top:0">已儲存修改</h3><p>叫料單 ${esc(no)} 已修改 ${ch.length} 項。要重新列印進料申請單嗎？</p>`)) printOrder(fresh);
+    } catch (e) {
+      $('#editMsg').innerHTML = `<div class="note bad">修改失敗：${esc(e.message)}</div>`; $('#dlgYes').disabled = false;
+    }
+  };
+  msg(); d.showModal();
+}
 $('#exportCsv').onclick = () => {
   const rows = histRows();
   const head = ['日期', '時間', '叫料單號', '申請人', '聯繫電話', '合約編號', '廠商', '品名', '單位', '申請數量', '下單後累計', '合約數量', '合約單價', '備註', '需用日期', '用途說明', '交貨地點'];
